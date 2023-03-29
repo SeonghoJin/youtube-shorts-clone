@@ -1,13 +1,13 @@
 import { youtubeUrlList } from './youtube';
 import './App.css';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { debounce, throttle } from 'lodash';
 
 const YoutubeItem = ({ src }: { src: string }) => {
   const ref = useRef<HTMLIFrameElement>(null);
 
   return (
-    <div className="w-full h-[100vh] [scroll-snap-align:start]">
+    <div className="w-full h-[100vh] [scroll-snap-align:start] ">
       <div className="flex items-center justify-center">
         <iframe
           className=""
@@ -28,6 +28,8 @@ const YoutubeItem = ({ src }: { src: string }) => {
 function App() {
   const ref = useRef<HTMLUListElement>(null);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
+  const [itemIndex, setItemIndex] = useState(0);
+  const [canTouchMove, setCanTouchMove] = useState(true);
 
   const animationStart = (callback: () => void) => {
     if (animationRef?.current) {
@@ -39,26 +41,32 @@ function App() {
         clearTimeout(animationRef?.current);
         animationRef.current = null;
       }
-    }, 400);
+    }, 500);
   };
 
-  const increase = () => {
+  const increase = useCallback(() => {
     animationStart(() => {
       ref?.current?.scrollBy({
         top: -1,
         behavior: 'smooth',
       });
     });
-  };
+  }, []);
 
-  const decrease = () => {
+  const decrease = useCallback(() => {
     animationStart(() => {
       ref?.current?.scrollBy({
         top: 1,
         behavior: 'smooth',
       });
     });
-  };
+  }, []);
+
+  useEffect(() => {
+    // use item index to scroll to specific item
+    // fetch data from api
+    console.log(itemIndex);
+  }, [itemIndex]);
 
   return (
     <div className="w-full">
@@ -84,6 +92,14 @@ function App() {
         <ul
           className="flex-col gap-[30px] m-[0_auto] overflow-y-scroll [scroll-snap-type:y_mandatory] h-[100vh] [overscroll-behavior:_none;]"
           ref={ref}
+          onScroll={debounce((e) => {
+            const { scrollTop, clientHeight } = e.target as HTMLUListElement;
+            const { height } = (
+              e.target as HTMLUListElement
+            ).getBoundingClientRect();
+            const scrollPosition = scrollTop + clientHeight;
+            setItemIndex(Math.floor(scrollPosition / height) - 1);
+          }, 10)}
         >
           {youtubeUrlList.map((url, index) => (
             <li className=" justify-center items-center ">
